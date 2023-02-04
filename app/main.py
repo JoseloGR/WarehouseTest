@@ -5,9 +5,12 @@ from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from fastapi import FastAPI, UploadFile, Response, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
+from app.database import get_db
+from app import models
 from app.routers import product, warehouse
 from app.utils import serializer, deserializer
 
+AUTO_IMPORT = False
 
 app = FastAPI()
 
@@ -74,9 +77,47 @@ async def upload_file(file: UploadFile):
 
 async def consume():
     await consumer.start()
+    _db = next(get_db())
     try:
         async for msg in consumer:
             print("Consumed: ", msg.topic, msg.value)
+
+            # warehouse ref
+            warehouse = _db.query(models.Warehouse).filter(models.Warehouse.sub_inventory == msg.value.get('Sub inventario')).first()
+            if not warehouse:
+                print(f"Orden de compra no puede ser procesada para {str(msg.value)}")
+                if AUTO_IMPORT:
+                    new_warehouse = models.Warehouse(**{'sub_inventory': msg.value.get('Sub inventario'), 'name': msg.value.get('PDV')})
+                    _db.add(new_warehouse)
+                    _db.commit()
+                    _db.refresh(new_warehouse)
+                    warehouse = new_warehouse
+
+            if warehouse:
+                exists_order = _db.query(models.Order).filter(models.Order.warehouse_id == warehouse.id).first()
+                if not exists_order:
+                    new_order = models.Order(total_units=msg.value.get('TOTAL'), warehouse_id=warehouse.id)
+                    _db.add(new_order)
+
+                    for key, value in msg.value.items():
+                        if key not in ['Sub inventario', 'PDV', 'TOTAL']:
+                            _product_db = _db.query(models.Product).filter(models.Product.sku == key).first()
+                            if AUTO_IMPORT and not _product_db:
+                                new_product = models.Product(**{'sku': key})
+                                _db.add(new_product)
+                                _db.commit()
+                                _db.refresh(new_product)
+                                _product_db = new_product
+
+                            if _product_db:
+                                new_order_detail = models.OrderDetail(
+                                    order = new_order,
+                                    product = _product_db,
+                                    quantity = value
+                                )
+                                _db.add(new_order_detail)
+                    _db.commit()
+
     finally:
         await consumer.stop()
 
