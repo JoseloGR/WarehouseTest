@@ -17,7 +17,7 @@ class ProductResponse(ProductBaseSchema):
     id: int
     sku: str
     created_at: datetime
-    updated_at: datetime
+    updated_at: datetime | None
 
 
 class UpdateProductSchema(BaseModel):
