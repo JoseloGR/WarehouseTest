@@ -15,7 +15,7 @@ def get_products(db: Session = Depends(get_db), limit: int = 10, page: int = 1):
     return {
         'status': 'success',
         'results': len(products),
-        'products': products
+        'data': products
     }
 
 

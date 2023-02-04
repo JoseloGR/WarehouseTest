@@ -33,11 +33,39 @@ class UpdateProductSchema(BaseModel):
 class ListProductResponse(BaseModel):
     status: str
     results: int
-    products: List[ProductResponse]
+    data: List[ProductResponse]
 
 
 class WarehouseBaseSchema(BaseModel):
-    id: int
     sub_inventory: str
     name: str
 
+    class Config:
+        orm_mode = True
+
+
+class CreateWarehouseSchema(WarehouseBaseSchema):
+    pass
+
+
+class WarehouseResponse(WarehouseBaseSchema):
+    id: int
+    sub_inventory: str
+    name: str
+    created_at: datetime
+
+
+class UpdateWarehouseSchema(BaseModel):
+    id: int
+    sub_inventory: str
+    name: str
+    created_at: datetime | None
+
+    class Config:
+        orm_mode = True
+
+
+class ListWarehouseResponse(BaseModel):
+    status: str
+    results: int
+    data: List[WarehouseResponse]
