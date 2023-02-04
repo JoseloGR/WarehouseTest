@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     POSTGRES_HOSTNAME: str
     CLIENT_ORIGIN: str
 
+    KAFKA_INSTANCE: str
+
     class Config:
         env_file = './.env'
 
