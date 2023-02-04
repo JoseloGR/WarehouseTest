@@ -3,7 +3,6 @@ from typing import List
 from pydantic import BaseModel
 
 class ProductBaseSchema(BaseModel):
-    id: int
     sku: str
 
     class Config:
@@ -34,7 +33,7 @@ class UpdateProductSchema(BaseModel):
 class ListProductResponse(BaseModel):
     status: str
     results: int
-    products: List(ProductResponse)
+    products: List[ProductResponse]
 
 
 class WarehouseBaseSchema(BaseModel):
