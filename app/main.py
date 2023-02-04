@@ -5,7 +5,7 @@ from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routers import product, warehouse
+from app.routers import product, warehouse, file
 from app.schemas import ProducerMessage, ProducerResponse
 
 app = FastAPI()
@@ -25,6 +25,7 @@ app.add_middleware(
 
 app.include_router(product.router, tags=['Products'], prefix='/api/products')
 app.include_router(warehouse.router, tags=['Warehouses'], prefix='/api/warehouses')
+app.include_router(file.router, tags=['Files'], prefix='/api/files')
 
 loop = asyncio.get_event_loop()
 aioproducer = AIOKafkaProducer(loop=loop, bootstrap_servers=settings.KAFKA_INSTANCE)
