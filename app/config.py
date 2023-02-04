@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     CLIENT_ORIGIN: str
 
     KAFKA_INSTANCE: str
+    KAFKA_TOPIC_ORDERS: str
 
     class Config:
         env_file = './.env'

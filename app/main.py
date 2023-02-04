@@ -1,12 +1,13 @@
 import asyncio
-import json
+import pandas as pd
 
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, Response, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routers import product, warehouse, file
-from app.schemas import ProducerMessage, ProducerResponse
+from app.routers import product, warehouse
+from app.utils import serializer, deserializer
+
 
 app = FastAPI()
 
@@ -25,20 +26,18 @@ app.add_middleware(
 
 app.include_router(product.router, tags=['Products'], prefix='/api/products')
 app.include_router(warehouse.router, tags=['Warehouses'], prefix='/api/warehouses')
-app.include_router(file.router, tags=['Files'], prefix='/api/files')
 
 loop = asyncio.get_event_loop()
-aioproducer = AIOKafkaProducer(loop=loop, bootstrap_servers=settings.KAFKA_INSTANCE)
-consumer = AIOKafkaConsumer("orders", bootstrap_servers=settings.KAFKA_INSTANCE, loop=loop)
-
-
-async def consume():
-    await consumer.start()
-    try:
-        async for msg in consumer:
-            print("Consumed: ", msg.topic, msg.value)
-    finally:
-        await consumer.stop()
+aioproducer = AIOKafkaProducer(
+    loop=loop,
+    bootstrap_servers=settings.KAFKA_INSTANCE,
+    enable_idempotence=True,
+    value_serializer=serializer,
+    compression_type="gzip")
+consumer = AIOKafkaConsumer(settings.KAFKA_TOPIC_ORDERS,
+    bootstrap_servers=settings.KAFKA_INSTANCE,
+    loop=loop,
+    value_deserializer=deserializer)
 
 
 @app.on_event("startup")
@@ -53,13 +52,33 @@ async def shutdown_event():
     await consumer.stop()
 
 
-@app.post("/producer/{topicname}", tags=['Producers'])
-async def kafka_produce(msg: ProducerMessage, topicname: str):
-    await aioproducer.send(topicname, json.dumps(msg.dict()).encode("ascii"))
-    response = ProducerResponse(
-        name=msg.name, message_id=msg.message_id, topic=topicname
-    )
-    return response
+@app.post('/api/files/excel', tags=['Files'])
+async def upload_file(file: UploadFile):
+    try:    
+        contents = await file.read()
+        excel_data = pd.read_excel(contents)
+        excel_data.fillna(value=0, inplace=True)
+        list_data = excel_data.to_dict(orient='records')
+        
+        for order in list_data:
+            filtered_dict = dict(filter(lambda elem: elem[1] != 0 or type(elem[1]) == str, order.items()))
+            if filtered_dict.get('Sub inventario'):
+                # sending messages
+                await aioproducer.send(settings.KAFKA_TOPIC_ORDERS, filtered_dict)
+        
+        return Response(status_code=status.HTTP_200_OK)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=str(e))
+
+
+async def consume():
+    await consumer.start()
+    try:
+        async for msg in consumer:
+            print("Consumed: ", msg.topic, msg.value)
+    finally:
+        await consumer.stop()
 
 
 @app.get('/api/v1/healthcheck', tags=['Health'])
