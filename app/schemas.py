@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List
-from pydantic import BaseModel
+from pydantic import BaseModel, StrictStr
 
 class ProductBaseSchema(BaseModel):
     sku: str
@@ -69,3 +69,15 @@ class ListWarehouseResponse(BaseModel):
     status: str
     results: int
     data: List[WarehouseResponse]
+
+
+class ProducerResponse(BaseModel):
+    name: StrictStr
+    message_id: StrictStr
+    topic: StrictStr
+    timestamp: StrictStr = ""
+
+class ProducerMessage(BaseModel):
+    name: StrictStr
+    message_id: StrictStr = ""
+    timestamp: StrictStr = ""

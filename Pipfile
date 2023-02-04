@@ -8,6 +8,10 @@ fastapi = {extras = ["all"], version = "*"}
 sqlalchemy = "*"
 psycopg2-binary = "*"
 alembic = "*"
+aiokafka = "*"
+python-multipart = "*"
+pandas = "*"
+openpyxl = "*"
 
 [dev-packages]
 
