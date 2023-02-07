@@ -7,7 +7,7 @@ networks:
 services:
   web:
     build: .
-    command: bash -c 'while !</dev/tcp/wh-postgres/5432; do sleep 30; done; uvicorn app.main:app --host 0.0.0.0'
+    command: uvicorn app.main:app --reload --workers 1 --host 0.0.0.0
     volumes:
       - .:/app
     ports:
@@ -17,6 +17,7 @@ services:
     depends_on:
       - wh-postgres
       - kafka
+      - zookeeper
     restart: always
   wh-postgres:
     image: postgres
@@ -32,31 +33,29 @@ services:
       - postgres-db:/var/lib/postgresql/data
 
   zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+    image: bitnami/zookeeper:latest
     ports:
-      - 22181:2181
+      - 2181:2181
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
 
   kafka:
-    image: confluentinc/cp-kafka:latest
+    image: bitnami/kafka:latest
+    ports:
+      - 9092:9092
+      - 9093:9093
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT
+      - KAFKA_CFG_LISTENERS=CLIENT://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
     depends_on:
       - zookeeper
-    ports:
-      - 29092:29092
-    expose:
-      - 29092
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_ADVERTISED_HOST_NAME: kafka
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_CREATE_TOPICS: "orders:1:1"
-    restart: always
 
 volumes:
   postgres-db:

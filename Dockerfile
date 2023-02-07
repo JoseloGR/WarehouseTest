@@ -13,8 +13,18 @@ ENV PYTHONUNBUFFERED 1
 ENV ENVIRONMENT prod
 ENV TESTING 0
 
+# install system dependencies
+RUN apt-get update \
+    && apt-get -y install kafkacat \
+    && apt-get clean
+
 # install dependencies
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-COPY . .
+# add entrypoint.sh
+COPY ./entrypoint.sh .
+RUN chmod +x /usr/src/app/entrypoint.sh
+
+# run entrypoint.sh
+ENTRYPOINT ["sh", "/usr/src/app/entrypoint.sh"]
