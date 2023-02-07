@@ -28,3 +28,10 @@ http://localhost:8000/api/files/excel
 ```
 
 Anexando el archivo excel a un Form Data (multipart/form-data) para que el endpoint pueda gestionar el archivo de forma adecuada.
+
+
+Para ver logs del Consumer correr el siguiente comando antes de enviar la petición a `/api/files/excel`
+
+```bash
+docker logs -f warehousetest-web-1
+```
