@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import get_db
 from app import models
-from app.routers import product, warehouse
+from app.routers import product, warehouse, order
 from app.utils import serializer, deserializer
 
 AUTO_IMPORT = False
@@ -29,6 +29,7 @@ app.add_middleware(
 
 app.include_router(product.router, tags=['Products'], prefix='/api/products')
 app.include_router(warehouse.router, tags=['Warehouses'], prefix='/api/warehouses')
+app.include_router(order.router, tags=['Orders'], prefix='/api/orders')
 
 loop = asyncio.get_event_loop()
 aioproducer = AIOKafkaProducer(
