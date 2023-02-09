@@ -35,3 +35,6 @@ Para ver logs del Consumer correr el siguiente comando antes de enviar la petici
 ```bash
 docker logs -f warehousetest-web-1
 ```
+
+## Cola de mensajes en Órdenes de compra
+![M2Crowd-Página-2](https://user-images.githubusercontent.com/9125861/217905079-8c53d805-8aaf-4a57-8296-7291543fdc9d.png)
